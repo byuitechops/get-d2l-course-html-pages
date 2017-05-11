@@ -1,18 +1,26 @@
-/*eslint-env node*/
+/*eslint-env node, browser*/
 /*eslint no-console:0, no-unused-vars:0*/
-function getD2LCourseHtmlPages(ouNumber, cb) {
+/*global async, $*/
+function getD2LCourseHtmlPages(ouNumber, topCallBack) {
 
-    var toc = require('./joshSandboxTOC.js'),
-        urls,
-        uniqueUrls,
-        finisedUrls;
+    var urls, uniqueUrls,
+        //this is just for testing
+        toc = require('./joshSandboxTOC.js');
+
+    function makeUnique(url, index, array) {
+        return array.indexOf(url) === index;
+    }
+
+    function makeAppsoluteURL(urlPiece) {
+        return window.location.protocol + window.location.host + urlPiece;
+    }
 
     function proccssTopics(topics) {
         return topics
             //.filter(topic => topic.TypeIdentifier.toLowerCase() === 'file')
             .filter(topic => topic.Url.includes('/content/enforced/'))
             //only want the Url prop for now
-            .map(topic => topic.Url);
+            .map(topic => makeAppsoluteURL(topic.Url));
 
     }
 
@@ -35,9 +43,78 @@ function getD2LCourseHtmlPages(ouNumber, cb) {
         }, []);
     }
 
-    function makeUnique(url, index, array) {
-        return array.indexOf(url) === index;
+
+    function getPageText(url, cb) {
+        //get the page guts by ajax
+        $.ajax({
+            url: url,
+            success: function (html) {
+                cb(null, {
+                    url: url,
+                    content: html
+                });
+            },
+            error: function (err) {
+                cb(err, null);
+            }
+        });
     }
+
+    function getlinksOnPage(page) {
+        //Look at page.content and find all the urls that we like, could use jquery or could use cherrio or regex
+        //decide how we are going to use this module. in browser, with nightmare, or Live dev server
+        return []; //fill that with urls, remember to use makeAppsoluteURL()
+    }
+
+
+    function proccessUrls(urls, cb) {
+        var finishedPages = [];
+        //3 Map to get all the html content strings
+        //the 25 limits the number of simultaneous requests there are at time
+        async.mapLimit(urls, 25, getPageText, function (err, pages) {
+            if (err) {
+                cb(err);
+                return;
+            }
+
+            var newLinks;
+
+            //4 Copy over the urls over to finished
+            finishedPages = finishedPages.concat(pages);
+
+            //5 Find links in pages that are not in finished 
+            newLinks = pages.reduce(function (linksToKeep, page) {
+
+                var linksOnPage = getlinksOnPage(page);
+
+                //filter links down to ones that are not in finshedPages and add to to linksToKeep
+                linksToKeep = linksToKeep.concat(
+                    linksOnPage.filter(link => !finishedPages.some(page => page.url === link))
+                );
+
+
+                return linksToKeep;
+            }, []);
+
+
+            //6 if newLinks is not empty call self recursively and then call the callback again 
+            //else call callback with finished pages it has all its going to have here
+            if (newLinks.length > 0) {
+                //these links will need to proccessed
+                proccessUrls(newLinks, function (err, pages) {
+                    finishedPages = finishedPages.concat(pages);
+                    cb(err, pages);
+                });
+            } else {
+                //no new links
+                cb(null, finishedPages);
+            }
+        });
+
+
+    }
+
+    /****************** START ********************/
 
     // 1 Get all the Urls from the Toc
     urls = TOC2Topics(toc, proccssTopics);
@@ -48,12 +125,8 @@ function getD2LCourseHtmlPages(ouNumber, cb) {
     //console.log("urls:", urls);
     //console.log("uniqueUrls:", uniqueUrls);
 
-    urls = urls.map(function (ele) { // JK fam make it async
-        /*content = do the ajax calls*/
-        return {
-            url: ele,
-            content: 1 //content
-        }
-    })
-
+    //go proccess the urls
+    proccessUrls(uniqueUrls, function (err, pages) {
+        topCallBack(err, pages);
+    });
 }
