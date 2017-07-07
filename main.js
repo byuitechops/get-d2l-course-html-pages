@@ -3,28 +3,43 @@
 /*global async, $*/
 function getD2LCourseHtmlPages(ouNumber, topCallBack) {
 
-    var urls, uniqueUrls,
-        //this is just for testing
-        toc = require('./joshSandboxTOC.js');
+    var urls, uniqueUrls, toc;
 
     function makeUnique(url, index, array) {
         return array.indexOf(url) === index;
     }
 
     function makeAppsoluteURL(urlPiece) {
+        var window = {
+            location: {
+                protocol: 'https:',
+                host: 'byui.brightspace.com'
+            }
+        }
+
         return window.location.protocol + window.location.host + urlPiece;
+
     }
 
     function proccssTopics(topics) {
         return topics
             //.filter(topic => topic.TypeIdentifier.toLowerCase() === 'file')
-            .filter(topic => topic.Url.includes('/content/enforced/'))
+            .filter(function (topic) {
+                //check that it exists    
+                if (typeof topic.Url === 'undefined' || topic.Url === null) {
+                    return false;
+                }
+                //check that the Url has the content/enforced
+                return topic.Url.includes('/content/enforced/')
+            })
+
             //only want the Url prop for now
             .map(topic => makeAppsoluteURL(topic.Url));
+        //.map(topic => topic.Url);
 
     }
 
-    function TOC2Topics(toc, proccssTopics) {
+    function TOC2Topics(toc) {
 
         return toc.Modules.reduce(function (urls, module) {
             //dig deeper
@@ -116,17 +131,28 @@ function getD2LCourseHtmlPages(ouNumber, topCallBack) {
 
     /****************** START ********************/
 
-    // 1 Get all the Urls from the Toc
-    urls = TOC2Topics(toc, proccssTopics);
+    //run the toc call
+    toc = require('./joshSandboxTOC.js');
+ 
+    //Get all the Urls from the Toc
+    urls = TOC2Topics(toc);
 
-    //2 Make it a unique list
+    //Make it a unique list
     uniqueUrls = urls.filter(makeUnique);
 
     //console.log("urls:", urls);
+    console.log("urls:", urls);
     //console.log("uniqueUrls:", uniqueUrls);
 
     //go proccess the urls
+    /*
     proccessUrls(uniqueUrls, function (err, pages) {
         topCallBack(err, pages);
     });
+    */
 }
+
+//call it
+getD2LCourseHtmlPages(1, function () {
+    console.log('done');
+})
