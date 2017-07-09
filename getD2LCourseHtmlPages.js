@@ -1,7 +1,17 @@
 /*eslint-env node, browser*/
 /*eslint no-console:0, no-unused-vars:0, no-undef:02*/
 /*global async, URI*/
-
+/*
+Dependencies that need to be on the page
+    async.js lib 
+        site: https://caolan.github.io/async/
+        github: https://github.com/caolan/async
+        cdn: https://cdnjs.cloudflare.com/ajax/libs/async/2.5.0/async.min.js
+    URI.js
+        site: https://medialize.github.io/URI.js/
+        github: https://github.com/medialize/URI.js
+        cdn: https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.18.10/URI.min.js
+*/
 function getD2LCourseHtmlPages(orgUnitId, topCallback) {
     var newUrls,
         donePages = [];
