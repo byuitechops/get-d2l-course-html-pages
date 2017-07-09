@@ -1,8 +1,9 @@
 /*eslint-env node, browser*/
 /*eslint no-console:0, no-unused-vars:0, no-undef:02*/
 /*global async, URI*/
-function getD2LCourseHtmlPages(orgUnitId, topCallBack) {
-    var toc, urls, newUrls,
+
+function getD2LCourseHtmlPages(orgUnitId, topCallback) {
+    var newUrls,
         donePages = [];
 
     function removeDuplicates(url, index, array) {
@@ -11,155 +12,216 @@ function getD2LCourseHtmlPages(orgUnitId, topCallBack) {
 
 
     /*********************************************
-     * Retrieve table of contents for the specified orgUnitId 
+     *********************************************
+     * 1,2 Get url from the course's Table of Contents
+     **********************************************
      **********************************************/
-    function getToc(orgUnitId, callback) {
-        var tocxhr = new XMLHttpRequest();
-        tocxhr.open("GET", "/d2l/api/le/1.15/" + orgUnitId + "/content/toc")
-        tocxhr.onload = function () {
-            if (tocxhr.status == 200) {
-                callback(null, JSON.parse(tocxhr.response));
-            }
-        }
+    function getUrlsFromToc(orgUnitId, getUrlsFromTocCallback) {
+        var toc, urls;
 
-        tocxhr.onerror = function () {
-            callback(tocxhr.status, null);
-        }
-        tocxhr.send();
-    }
-
-    /*********************************************
-     * 2 Takes the toc and flatens it to an array of urls
-     **********************************************/
-    function TOC2Topics(toc) {
-        var urlsOut;
-
-        function makeAppsoluteURL(urlPiece) {
-            return window.location.protocol + '//' + window.location.host + urlPiece;
-        }
-
-        function proccssTopics(topics) {
-            return topics
-                //.filter(topic => topic.TypeIdentifier.toLowerCase() === 'file')
-                .filter(function (topic) {
-                    //check that it exists    
-                    if (typeof topic.Url === 'undefined' || topic.Url === null) {
-                        return false;
-                    }
-                    //check that the Url has the content/enforced
-                    return topic.Url.includes('/content/enforced/')
-                })
-
-                //only want the Url prop for now
-                .map(topic => makeAppsoluteURL(topic.Url));
-        }
-
-        urlsOut = toc.Modules.reduce(function (urls, module) {
-            //dig deeper
-            if (module.Modules.length > 0) {
-                //get the next level and add it to the urls
-                urls = urls.concat(TOC2Topics(module));
-            }
-
-            //get the ones here using the supplied function
-            if (module.Topics.length > 0) {
-                urls = urls.concat(proccssTopics(module.Topics));
-            }
-
-            //send them on
-            return urls;
-        }, []);
-
-        //remove any duplicates from the list
-        return urlsOut.filter(removeDuplicates);
-    }
-
-    /*********************************************
-     * 3 makes ajax call for each url to get the html text. 
-     * Returns an array of objects with the following properties
-     * url, html and error 
-     **********************************************/
-    function getHtmlStrings(urls, getHtmlCb) {
-        function getHtml(url, callback) {
-            var xhr = new XMLHttpRequest(),
-                encodedURL = encodeURI(url)
-                /* this replace is because encodeURI keeps # for ankor tags but we have
-                 * html files with # in their name thus in the url and they need 
-                 * to be encoded    
-                 */
-                .replace('#', '%23');
-            xhr.open("GET", encodedURL);
-            xhr.onload = function (e) {
-                if (xhr.status == 200) {
-                    //console.log('happy');
-                    callback(null, {
-                        url: url,
-                        html: xhr.response,
-                        error: null
-                    });
-                } else {
-                    console.log('sad');
-                    console.log("xhr.status:", xhr.status);
-                    callback(null, {
-                        url: url,
-                        html: null,
-                        error: xhr.status
-                    });
+        /*********************************************
+         * 1 Retrieve table of contents for the specified orgUnitId 
+         **********************************************/
+        function getToc(orgUnitId, getTocCallback) {
+            var tocxhr = new XMLHttpRequest();
+            tocxhr.open("GET", "/d2l/api/le/1.15/" + orgUnitId + "/content/toc")
+            tocxhr.onload = function () {
+                if (tocxhr.status == 200) {
+                    getTocCallback(null, JSON.parse(tocxhr.response));
                 }
             }
 
-            xhr.send();
+            tocxhr.onerror = function () {
+                getTocCallback(tocxhr.status, null);
+            }
+            tocxhr.send();
         }
 
-        //loop the above getHtml function for each url using the async lib
-        async.mapLimit(urls, 30, getHtml, function (err, currentPages) {
+        /*********************************************
+         * 2 Takes the toc and flatens it to an array of urls
+         **********************************************/
+        function TOC2Topics(toc) {
+            var urlsOut;
+
+            function getURLFromTopic(topic) {
+                //make the url absolute
+                var url = window.location.protocol + '//' + window.location.host + topic.Url;
+
+
+                //encode url
+                url = encodeURI(url);
+
+                //fix file names with `#` in them
+                if (topic.Title.includes('#')) {
+                    /* this replace is because encodeURI keeps # for anchor tags but we have
+                     * html files with # in their name thus in the url and they need 
+                     * to be encoded    
+                     */
+                    url = url.replace('#', '%23');
+                }
+
+                return url;
+            }
+
+
+            function proccssTopics(topics) {
+                return topics
+                    //.filter(topic => topic.TypeIdentifier.toLowerCase() === 'file')
+                    .filter(function (topic) {
+                        //check that it exists    
+                        if (typeof topic.Url === 'undefined' || topic.Url === null) {
+                            return false;
+                        }
+                        //check that the Url has the content/enforced
+                        return topic.Url.includes('/content/enforced/')
+                    })
+                    //only want the Url prop for now
+                    .map(function (topic) {
+                        return getURLFromTopic(topic);
+                    });
+            }
+
+            urlsOut = toc.Modules.reduce(function (urls, module) {
+                //dig deeper
+                if (module.Modules.length > 0) {
+                    //get the next level and add it to the urls
+                    urls = urls.concat(TOC2Topics(module));
+                }
+
+                //get the ones here using the supplied function
+                if (module.Topics.length > 0) {
+                    urls = urls.concat(proccssTopics(module.Topics));
+                }
+
+                //send them on
+                return urls;
+            }, []);
+
+            //remove any duplicates from the list
+            return urlsOut.filter(removeDuplicates);
+        }
+
+        /******************** getUrlsFromToc START *****************************/
+        //1 Retrieve table of contents for the specified orgUnitId 
+        getToc(orgUnitId, function (err, toc) {
             if (err) {
-                //should not get here
-                getHtmlCb(err, null)
+                getUrlsFromTocCallback(err, null);
                 return;
             }
-            //send the pages back
-            getHtmlCb(null, currentPages);
 
-        })
+            //2 convert toc to array of urls
+            urls = TOC2Topics(toc);
+
+            getUrlsFromTocCallback(null, urls);
+        });
     }
 
     /*********************************************
-     * 4 sort the pages in to wheat and tares
+     *********************************************
+     * 3,4,5 Turn an array of urls into HTML pages
+     **********************************************
      **********************************************/
-    function filterOutErrorPages(currentPages) {
-        var goodPages = [],
-            badPages = [];
+    function urlsToPages(urls, urlsToPagesInturnalCallback) {
+        /*********************************************
+         * 3 makes ajax call for each url to get the html text. 
+         * Returns an array of objects with the following properties
+         * url, html and error 
+         **********************************************/
+        function getHtmlStrings(urls, getHtmlCb) {
+            function getHtml(url, callback) {
+                var xhr = new XMLHttpRequest();
 
-        currentPages.forEach(function (page) {
-            if (page.error === null) {
-                goodPages.push(page)
-            } else {
-                badPages.push(page)
+                xhr.open("GET", url);
+                xhr.onload = function (e) {
+                    if (xhr.status == 200) {
+                        //console.log('happy');
+                        callback(null, {
+                            url: url,
+                            html: xhr.response,
+                            error: null
+                        });
+                    } else {
+                        console.log('sad');
+                        console.log("xhr.status:", xhr.status);
+                        callback(null, {
+                            url: url,
+                            html: null,
+                            error: xhr.status
+                        });
+                    }
+                }
+
+                xhr.send();
             }
-        })
-        console.log("goodPages:", goodPages);
-        console.log("badPages:", badPages);
-        //DIDN'T DO ANYTHING WITH BAD PAGES HERE!
-        return goodPages;
-    }
-    /*********************************************
-     * 5 parse html strings into html documents
-     *
-     * this function takes an array of objects that look like:
-     * {
-     *     url: '{{url string}}',
-     *     html: '{{html string}}'
-     * }
-     **********************************************/
-    function parseHTML(currentPages) {
-        var parser = new DOMParser();
-        return currentPages.map(function (page) {
-            return {
-                url: page.url,
-                html: page.html,
-                document: parser.parseFromString(page.html, 'text/html')
-            };
+
+            //loop the above getHtml function for each url using the async lib
+            async.mapLimit(urls, 30, getHtml, function (err, currentPages) {
+                if (err) {
+                    //should not get here
+                    getHtmlCb(err, null)
+                    return;
+                }
+                //send the pages back
+                getHtmlCb(null, currentPages);
+
+            })
+        }
+
+        /*********************************************
+         * 4 sort the pages in to wheat and tares
+         **********************************************/
+        function filterOutErrorPages(currentPages) {
+            var goodPages = [],
+                badPages = [];
+
+            currentPages.forEach(function (page) {
+                if (page.error === null) {
+                    goodPages.push(page)
+                } else {
+                    badPages.push(page)
+                }
+            })
+            console.log("goodPages:", goodPages);
+            console.log("badPages:", badPages);
+            //DIDN'T DO ANYTHING WITH BAD PAGES HERE!
+            return goodPages;
+        }
+        /*********************************************
+         * 5 parse html strings into html documents
+         *
+         * this function takes an array of objects that look like:
+         * {
+         *     url: '{{url string}}',
+         *     html: '{{html string}}'
+         * }
+         **********************************************/
+        function parseHTML(currentPages) {
+            var parser = new DOMParser();
+            return currentPages.map(function (page) {
+                return {
+                    url: page.url,
+                    html: page.html,
+                    document: parser.parseFromString(page.html, 'text/html')
+                };
+            })
+
+        }
+
+        /************************* urlsToPages START **************************/
+        //3 get the html pages
+        getHtmlStrings(urls, function (err, currentPages) {
+            if (err) {
+                urlsToPagesInturnalCallback(err, null);
+                return;
+            }
+
+            //4 filter out the errored pages
+            currentPages = filterOutErrorPages(currentPages);
+
+            //5 Convert the htlm text to html documents
+            currentPages = parseHTML(currentPages);
+
+            urlsToPagesInturnalCallback(null, currentPages);
         })
 
     }
@@ -172,100 +234,140 @@ function getD2LCourseHtmlPages(orgUnitId, topCallBack) {
     }
 
     /*********************************************
-     * 7 find more links in the current pages  
+     *********************************************
+     * 7,8 Comb the html pages for any more urls we have not seen yet
+     **********************************************
      **********************************************/
-    function findMoreURLs(currentPages) {
-        function toUrls(urlsOut, page) {
-            //get all the a tags on the page
-            var links = page.document.querySelectorAll('a');
-            //convert nodelist to real array
-            links = Array.from(links)
-                //convert from `a` nodes to just href text
-                .map(function (link) {
-                    return link.getAttribute('href');
-                })
-                //filter down to just .html links
-                .filter(function (link) {
-                    //so link.includes below doesn't break
-                    if (link === null) {
-                        return false;
-                    }
+    function getNewUrlsFromPages(currentPages, donePages) {
+        var newUrls;
+        /*********************************************
+         * 7 find unique list of more links in the current pages  
+         **********************************************/
+        function findMoreURLs(currentPages) {
+            function toUrls(urlsOut, page) {
+                //get all the a tags on the page
+                var links = page.document.querySelectorAll('a');
+                //convert nodelist to real array
+                links = Array.from(links)
+                    //convert from `a` nodes to just href text
+                    .map(function (link) {
+                        return link.getAttribute('href');
+                    })
+                    //filter down to just .html links
+                    .filter(function (link) {
+                        //so link.includes below doesn't break
+                        if (link === null) {
+                            return false;
+                        }
 
-                    return link.includes('.html');
-                })
-                //make them absolute href's
-                .map(function (link) {
-                    var linkOut = URI(link.trim()).absoluteTo(page.url).toString();
-                    //console.log("page.url", page.url, "\nlink:", link, "\nlinkOut:", linkOut);
-                    return linkOut;
-                })
-            //stick those on the end of the current list
-            return urlsOut.concat(links);
+                        return link.includes('.html');
+                    })
+                    //make them absolute href's
+                    .map(function (link) {
+                        link = link.trim();
+
+                        var linkOut = URI(link)
+                            //turns href from a tag to absolute url based on page url like a browser does
+                            .absoluteTo(page.url)
+                            //encodes the url
+                            .normalize()
+                            //makes it a string
+                            .toString();
+
+                        //console.log("page.url", page.url, "\nlink:", link, "\nlinkOut:", linkOut);
+                        return linkOut;
+                    })
+                //stick those on the end of the current list
+                return urlsOut.concat(links);
+            }
+
+            var urls = currentPages
+                //get the urls on all the pages
+                .reduce(toUrls, [])
+                //remove any duplicates
+                .filter(removeDuplicates);
+
+            //easier to read
+            //.sort();
+
+            return urls;
         }
 
-        var urls = currentPages
-            //get the urls on all the pages
-            .reduce(toUrls, [])
-            //remove any duplicates
-            .filter(removeDuplicates);
+        /*********************************************
+         * 8 filter out links that we have in the done list from newLinks
+         **********************************************/
+        function filterOutDonePages(newUrls) {
+            return newUrls.filter(function (url) {
+                //check to see if the current url is in the donePages list 
+                return donePages.every(function (page) {
+                    return page.url !== url;
+                });
+            })
 
-        //easier to read
-        //.sort();
+        }
 
-        return urls;
+        /******************** getNewUrlsFromPages START *****************************/
+        //7 Find more urls in current pages
+        newUrls = findMoreURLs(currentPages);
+
+        //8 Only keep newUrls if they are not already in the donePages 
+        newUrls = filterOutDonePages(newUrls);
+
+        return newUrls;
+
     }
 
     /*********************************************
-     * 8 filter out links that we have in the done list from newLinks
+     * This is the callback function that is given urlsToPages
+     * It saves the pages that urlsToPages makes
+     * calls getNewUrlsFromPages 
+     * Then checks if we are done yet to either start another urlsToPages
+     * Or calls the topCallback with the donePages
      **********************************************/
-    function filterOutDonePages(newUrls) {
-        return newUrls.filter(function (url) {
-            //check to see if the current url is in the donePages list 
-            return donePages.every(function (page) {
-                return page.url !== url;
-            });
-        })
-
-    }
-
-    /********************* START ***********************/
-    //1 Get TOC
-    getToc(orgUnitId, function (err, toc) {
+    function loopEndProgress(err, currentPages) {
         if (err) {
-            console.log(err);
+            topCallback(err, null);
             return;
         }
 
-        //2 convert toc to array of urls
-        urls = TOC2Topics(toc);
+        //6 currentPages are now done save them to donePages
+        saveDonePages(currentPages);
 
-        //3 get the html pages
-        getHtmlStrings(urls, function (err, currentPages) {
-            //4 filter out the errored pages
-            currentPages = filterOutErrorPages(currentPages);
-
-            //5 Convert the htlm text to html documents
-            currentPages = parseHTML(currentPages);
-
-            //6 currentPages are now done save them to  donePages
-            saveDonePages(currentPages)
-
-            //7 Find more urls in current pages
-            newUrls = findMoreURLs(currentPages);
-
-            //8 Only keep newUrls if they are not already in the donePages 
-            newUrls = filterOutDonePages(newUrls);
-
-            console.log("newUrls:", newUrls);
-            topCallBack(null, donePages)
-        })
-    })
+        //7,8 Get more urls from the current pages
+        newUrls = getNewUrlsFromPages(currentPages, donePages);
+        console.log("newUrls:", newUrls);
 
 
+        //9 loop if we have more urls else we are done!
+        if (newUrls.length > 0) {
+            urlsToPages(newUrls, loopEndProgress);
+        } else {
+            topCallback(null, donePages);
+        }
+    }
+
+
+    /***************************************************/
+    /***************************************************/
+    /********************* START ***********************/
+    /***************************************************/
+    /***************************************************/
+    //1,2
+    getUrlsFromToc(orgUnitId, function (err, urls) {
+        if (err) {
+            topCallback(err, null);
+            return;
+        }
+
+        // 3,4,5 convert the urls to pages then call the end of loop function
+        urlsToPages(urls, loopEndProgress)
+
+    });
 }
 
 getD2LCourseHtmlPages(10011, function (err, donePages) {
+    if (err) {
+        console.log("err:", err);
+    }
     console.log("donePages:", donePages);
-    console.log('done');
-
 })
