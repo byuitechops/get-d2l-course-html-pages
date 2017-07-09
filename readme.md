@@ -45,6 +45,16 @@ Dependencies that need to be included on the page
     - site: https://medialize.github.io/URI.js/
     - github: https://github.com/medialize/URI.js
     - cdn: https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.18.10/URI.min.js
+    
+## For Easy Development in D2L 
+
+Make sure you use the `live-development-server` https://github.com/byuitechops/live-development-server
+Then all you have to do is add this to a page in d2l an your off
+```html
+<script src="https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.18.10/URI.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/async/2.5.0/async.min.js"></script>
+<script src="https://localhost:8000/getD2LCourseHtmlPages.js"></script>
+```
 
 ## Note
 
