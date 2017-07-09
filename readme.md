@@ -30,7 +30,9 @@ callbackFunction(err, pages)
 For info on DOMParser see https://developer.mozilla.org/en-US/docs/Web/API/DOMParser
 
 ## Known Issues
-At this point when it makes the requests to get the html pages, if the status is not a 200 it just toss them out.
+- At this point when it makes the requests to get the html pages, if the status is not a 200 it just toss them out.
+
+- At this point the lib has only really tested in Chrome.
 
 Also see github issues for more.
 
@@ -55,7 +57,3 @@ Then all you have to do is add this to a page in d2l an your off
 <script src="https://cdnjs.cloudflare.com/ajax/libs/async/2.5.0/async.min.js"></script>
 <script src="https://localhost:8000/getD2LCourseHtmlPages.js"></script>
 ```
-
-## Note
-
-At this point the lib has only really tested in Chrome.
