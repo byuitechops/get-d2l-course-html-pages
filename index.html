@@ -1,0 +1,20 @@
+<form onsubmit="return false;">
+  <label for="orgUnitId">Course OU</label>
+  <input id="orgUnitId" type="number" min="10000" max="99999" required value="10011">
+  <hr>
+  <label for="query">Query</label>
+  <input id="query" type="text" value="Your query here">
+  <hr>
+  <label for="cs">Case Sensitive</label>
+  <input type="checkbox" id="cs">
+  <hr>
+  <label for="seachText">Search Text</label>
+  <input id="searchText" type="radio" name="type" checked="checked">
+  <label for="linkHrefs">Link hrefs</label>
+  <input id="linkHrefs" type="radio" name="type">
+  <label for="querySelector">Query Selector</label>
+  <input id="querySelector" type="radio" name="type">
+  <hr>
+  <input type="submit" onclick="getUrls()" value="Get URLs">
+</form>
+<div id="out"></div>
