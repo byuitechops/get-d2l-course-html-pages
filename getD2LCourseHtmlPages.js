@@ -345,7 +345,6 @@ function getD2LCourseHtmlPages(orgUnitId, topCallback) {
 
     //7,8 Get more urls from the current pages
     newUrls = getNewUrlsFromPages(currentPages, donePages);
-    console.log("newUrls:", newUrls);
 
 
     //9 loop if we have more urls else we are done!
