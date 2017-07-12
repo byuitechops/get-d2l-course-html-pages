@@ -24,7 +24,7 @@ var d2lScrape = (function () {
      * This function is called by getCourseHtmlPages but is also exposed through the api 
      **********************************************
      *****************************************  *****/
-    function getTopicsFromToc(orgUnitId, getTopicsFromTocCallback) {
+    function getTopicsWithUrlFromToc(orgUnitId, getTopicsFromTocCallback) {
         var toc, topics;
 
         /*********************************************
@@ -374,7 +374,7 @@ var d2lScrape = (function () {
         /***************************************************/
         /***************************************************/
         //1,2
-        getTopicsFromToc(orgUnitId, function (err, topics) {
+        getTopicsWithUrlFromToc(orgUnitId, function (err, topics) {
             var urls;
             console.log("topics:", topics);
             if (err) {
@@ -407,7 +407,7 @@ var d2lScrape = (function () {
 
     //send back the exposed functions
     return {
-        getTopicsFromToc: getTopicsFromToc,
+        getTopicsWithUrlFromToc: getTopicsWithUrlFromToc,
         getCourseHtmlPages: getCourseHtmlPages
     }
 
