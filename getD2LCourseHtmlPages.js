@@ -18,6 +18,16 @@ var d2lScrape = (function () {
         return array.indexOf(url) === index;
     }
 
+    function makeRequestErrorObj(request) {
+        console.log('sad');
+        return {
+            status: request.status,
+            statusText: request.statusText,
+            responseText: request.responseText,
+            responseURL: request.responseURL
+        }
+    }
+
     /*********************************************
      *********************************************
      * 1,2 Get topics from the course's Table of Contents
@@ -37,7 +47,7 @@ var d2lScrape = (function () {
                 if (tocxhr.status == 200) {
                     getTocCallback(null, JSON.parse(tocxhr.response));
                 } else {
-                    getTocCallback(tocxhr.status, null);
+                    getTocCallback(makeRequestErrorObj(tocxhr), null);
                 }
 
             }
@@ -154,20 +164,13 @@ var d2lScrape = (function () {
                                 error: null
                             });
                         } else {
-                            console.log('sad');
-                            console.log("xhr.status:", xhr.status);
-                            console.log("xhr.statusText:", xhr.statusText);
-                            console.log("xhr.responseText:", xhr.responseText);
-                            console.log("xhr.responseURL:", xhr.responseURL);
-
                             callback(null, {
                                 url: url,
                                 html: null,
-                                error: xhr.status
+                                error: makeRequestErrorObj(xhr)
                             });
                         }
                     }
-
                     xhr.send();
                 }
 
@@ -198,9 +201,10 @@ var d2lScrape = (function () {
                         badPages.push(page)
                     }
                 })
+                //Hold on to the errorpages
+                pagesWithError = pagesWithError.concat(badPages);
                 console.log("goodPages:", goodPages);
                 console.log("badPages:", badPages);
-                //DIDN'T DO ANYTHING WITH BAD PAGES HERE!
                 return goodPages;
             }
             /*********************************************
@@ -376,7 +380,6 @@ var d2lScrape = (function () {
         //1,2
         getTopicsWithUrlFromToc(orgUnitId, function (err, topics) {
             var urls;
-            console.log("topics:", topics);
             if (err) {
                 topCallback(err, null);
                 return;
