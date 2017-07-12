@@ -2,12 +2,12 @@
 <form onsubmit="return false;" class="flex">
   <div>
     <div class="flex">
-      <label for="orgUnitId">Course OU</label>
-      <input id="orgUnitId" type="number" min="1000" max="999999" required value="10011">
+      <label for="orgUnitId">Course OUs</label>
+      <input id="orgUnitId" type="text" required placeholder="10011, 10012">
     </div>
     <div class="flex">
       <label for="query">Query</label>
-      <input id="query" type="text" value="">
+      <input id="query" type="text" value="" placeholder="what you want to search for">
     </div>
     <div class="flex">
       <input type="checkbox" id="cs">
@@ -30,7 +30,6 @@
     </div>
   </div>
 </form>
-<div>
-  <ol id="out">
-  </ol>
+<div id="out">
+
 </div>
