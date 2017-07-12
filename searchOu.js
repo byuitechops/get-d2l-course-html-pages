@@ -1,5 +1,4 @@
 function showResults(data) {
-  console.log("Reset")
   document.getElementById('out').innerHTML = ''
   data.forEach(function (page) {
     document.getElementById('out').insertAdjacentHTML('beforeend', '<li><a href="' + page.url + '" target="_blank">' + page.url + '</a></li>')
@@ -10,6 +9,7 @@ function getUrls() {
   document.getElementById('out').innerHTML = '<p>Searching...</p>'
   var ou = document.getElementById('orgUnitId').value;
   getD2LCourseHtmlPages(ou, function (err, pages) {
+    console.log(pages)
     /*Get query*/
     var query = document.getElementById('query').value;
 
@@ -34,8 +34,9 @@ function getUrls() {
       var filteredList = pages.filter(function (page) {
         var links = Array.from(page.document.querySelectorAll('a'));
         var contains = links.some(function (link) {
-          if (link.href.search(query != -1)) {
-            console.log("found")
+          var href = link.getAttribute('href')
+          if (href !== null && href.search(query) != -1) {
+            console.log("found match")
             return true
           }
         })

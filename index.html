@@ -1,21 +1,34 @@
-<form onsubmit="return false;">
-  <label for="orgUnitId">Course OU</label>
-  <input id="orgUnitId" type="number" min="1000" max="999999" required value="10011">
-  <hr>
-  <label for="query">Query</label>
-  <input id="query" type="text" value="">
-  <hr>
-  <label for="cs">Case Sensitive</label>
-  <input type="checkbox" id="cs">
-  <hr>
-  <label for="seachText">Search Text</label>
-  <input id="searchText" type="radio" name="type" checked="checked">
-  <label for="linkHrefs">Link hrefs</label>
-  <input id="linkHrefs" type="radio" name="type">
-  <label for="querySelector">Query Selector</label>
-  <input id="querySelector" type="radio" name="type">
-  <hr>
-  <input type="submit" onclick="getUrls()" value="Get URLs">
+<link type="text/css" rel="stylesheet" href="styles.css">
+<form onsubmit="return false;" class="flex">
+  <div>
+    <div class="flex">
+      <label for="orgUnitId">Course OU</label>
+      <input id="orgUnitId" type="number" min="1000" max="999999" required value="10011">
+    </div>
+    <div class="flex">
+      <label for="query">Query</label>
+      <input id="query" type="text" value="">
+    </div>
+    <div class="flex">
+      <input type="checkbox" id="cs">
+      <label for="cs">Case Sensitive</label>
+    </div>
+    <input type="submit" onclick="getUrls()" value="Get URLs">
+  </div>
+  <div>
+    <div class="radio">
+      <input id="searchText" type="radio" name="type" checked="checked">
+      <label for="searchText" class="radio-label">Search Text</label>
+    </div>
+    <div class="radio">
+      <input id="linkHrefs" type="radio" name="type">
+      <label for="linkHrefs" class="radio-label">Link hrefs</label>
+    </div>
+    <div class="radio">
+      <input id="querySelector" type="radio" name="type">
+      <label for="querySelector" class="radio-label">Query Selector</label>
+    </div>
+  </div>
 </form>
 <div>
   <ol id="out">
