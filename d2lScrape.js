@@ -188,7 +188,7 @@ var d2lScrape = (function () {
             }
 
             /*********************************************
-             * 4 sort the pages in to wheat and tares
+             * 4 sort the pages in to wheat and tares. Save the tares and send the wheat back
              **********************************************/
             function filterOutErrorPages(currentPages) {
                 var goodPages = [],
@@ -319,10 +319,19 @@ var d2lScrape = (function () {
              **********************************************/
             function filterOutDonePages(newUrls) {
                 return newUrls.filter(function (url) {
-                    //check to see if the current url is in the donePages list 
-                    return donePages.every(function (page) {
+                    //check to see if the current url is in the donePages or pageslist 
+                    var notInDone, notInError;
+                    notInDone = donePages.every(function (page) {
                         return page.url !== url;
                     });
+
+                    notInError = pagesWithError.every(function (page) {
+                        return page.url !== url;
+                    });
+
+                    //only keep if not in either of the places
+                    return notInDone && notInError;
+
                 })
 
             }
