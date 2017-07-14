@@ -2,8 +2,8 @@ d2lScrape.getCourseHtmlPages(10011, function (err, pages) {
     if (err) {
         console.log("err:", err);
     }
-    console.log("pages.successfulPages:", pages.successfulPages);
-    console.log("pages.errorPages:", pages.errorPages);
+    console.log("DEMO: pages.successfulPages:", pages.successfulPages);
+    console.log("DEMO: pages.errorPages:", pages.errorPages);
 })
 
 d2lScrape.getTopicsWithUrlFromToc(10011, function (err, topics) {
@@ -11,5 +11,5 @@ d2lScrape.getTopicsWithUrlFromToc(10011, function (err, topics) {
         console.log("err:", err);
     }
 
-    console.log("topics:", topics);
+    console.log("DEMO: topics:", topics);
 })
