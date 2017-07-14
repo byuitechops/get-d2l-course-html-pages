@@ -14,12 +14,16 @@ Dependencies that need to be on the page
 */
 
 var d2lScrape = (function () {
+    //when true this console.logs all the crawling steps
+    var showCrawlingSteps = false;
+    //When true this console.logs all the urls that are filtered out
+    var showDroppedUrls = false;
+
     function removeDuplicates(url, index, array) {
         return array.indexOf(url) === index;
     }
 
     function makeRequestErrorObj(request) {
-        console.log('sad');
         return {
             status: request.status,
             statusText: request.statusText,
@@ -27,6 +31,7 @@ var d2lScrape = (function () {
             responseURL: request.responseURL
         }
     }
+
 
     /*********************************************
      *********************************************
@@ -54,34 +59,75 @@ var d2lScrape = (function () {
             tocxhr.send();
         }
 
+        function getCoursePath(orgUnitId, getPathCallback) {
+            var pathxhr = new XMLHttpRequest();
+            pathxhr.open("GET", "/d2l/api/lp/1.15/courses/" + orgUnitId)
+            pathxhr.onload = function () {
+                if (pathxhr.status == 200) {
+                    var path = JSON.parse(pathxhr.response).Path;
+                    getPathCallback(null, path);
+                } else {
+                    getPathCallback(makeRequestErrorObj(pathxhr), null)
+                }
+
+            }
+            pathxhr.send();
+        }
+
         /*********************************************
          * 2 Takes the toc and flatens it to an array of topics
          **********************************************/
-        function TOC2Topics(toc) {
+        function TOC2Topics(toc, coursePath) {
             var topicsOut;
 
-            function getURLFromTopic(topic) {
+            function getURLFromTopic(topic, coursePath) {
+                //some are set to null and I want to pass that info on to user
+                if (topic.Url === null) {
+                    return null;
+                }
+
                 //make the url absolute
-                var url = window.location.protocol + '//' + window.location.host + topic.Url;
+                var path,
+                    origin = new URI(window.location.href).origin(),
+                    url = new URI(topic.Url);
 
-
-                //encode url
-                url = encodeURI(url);
-
-                //fix file names with `#` in them
-                if (topic.Title.includes('#')) {
-                    /* this replace is because encodeURI keeps # for anchor tags but we have
-                     * html files with # in their name thus in the url and they need 
-                     * to be encoded    
+                //if the url is relative make it absolute
+                if (url.is('relative')) {
+                    /* We have html files with '#' in their name, # is normally reserved for hashs in urls
+                     * thus in the content area there are '#' in the middle of urls that need to be encoded
+                     * but libraries don't encode # by default, so we do it before we stick it in
                      */
-                    url = url.replace('#', '%23');
+
+                    //fix file names with `#` in them
+                    path = topic.Url.replace(/#/g, '%23');
+
+                    //fix scorm paths - scorm paths don't have the 
+                    if (topic.TypeIdentifier.match(/scorm/i) !== null) {
+                        path = coursePath + path;
+                    }
+
+                    //the url is relative make it absolute now
+                    url = new URI(path).absoluteTo(origin);
+                }
+
+                //we need a string to send on
+                url = url.normalize().toString();
+
+                //for testing
+                if (false && topic.Url.match('#') !== null) {
+                    console.dir(url);
+                }
+
+                if (false && topic.TypeIdentifier.match(/scorm/i) !== null) {
+                    console.dir(topic.Url);
+                    console.dir(path);
                 }
 
                 return url;
             }
 
 
-            function proccssTopics(topics) {
+            function proccssTopics(topics, coursePath) {
                 return topics
                     //make sure the topic has a url
                     .filter(function (topic) {
@@ -91,7 +137,7 @@ var d2lScrape = (function () {
                     .map(function (topic) {
                         return {
                             title: topic.Title,
-                            url: getURLFromTopic(topic),
+                            url: getURLFromTopic(topic, coursePath),
                             type: topic.TypeIdentifier
                         }
                     });
@@ -103,12 +149,12 @@ var d2lScrape = (function () {
                 //dig deeper
                 if (module.Modules.length > 0) {
                     //get the next level and add it to the urls
-                    topics = topics.concat(TOC2Topics(module));
+                    topics = topics.concat(TOC2Topics(module, coursePath));
                 }
 
                 //get the ones here using the supplied function
                 if (module.Topics.length > 0) {
-                    topics = topics.concat(proccssTopics(module.Topics));
+                    topics = topics.concat(proccssTopics(module.Topics, coursePath));
                 }
 
                 //send them on
@@ -126,10 +172,17 @@ var d2lScrape = (function () {
                 return;
             }
 
-            //2 convert toc to array of urls
-            topics = TOC2Topics(toc);
+            getCoursePath(orgUnitId, function (err, coursePath) {
+                if (err) {
+                    getTopicsFromTocCallback(err, null);
+                    return;
+                }
 
-            getTopicsFromTocCallback(null, topics);
+                //2 convert toc to array of urls
+                topics = TOC2Topics(toc, coursePath);
+
+                getTopicsFromTocCallback(null, topics);
+            })
         });
     }
 
@@ -138,6 +191,33 @@ var d2lScrape = (function () {
         var newUrls,
             donePages = [],
             pagesWithError = [];
+
+        //used to filter down to urls we want to keep
+        function keepHtmlLinks(url) {
+            //so link.includes below doesn't break
+            if (url === null || typeof url === 'undefined') {
+                return false;
+            }
+            var keep = url.includes('.html')
+
+            if (showDroppedUrls && !keep) {
+                console.log('not html url:', url);
+            }
+
+            return keep;
+        }
+
+        function keepCourseLinks(url) {
+            if (url === null) {
+                return false;
+            }
+            var keep = url.includes('/content/enforced/')
+
+            if (showDroppedUrls && !keep) {
+                console.log('not in cousre url:', url);
+            }
+            return keep;
+        }
 
         /*********************************************
          *********************************************
@@ -203,8 +283,10 @@ var d2lScrape = (function () {
                 })
                 //Hold on to the errorpages
                 pagesWithError = pagesWithError.concat(badPages);
-                console.log("goodPages:", goodPages);
-                console.log("badPages:", badPages);
+                if (showCrawlingSteps) {
+                    console.log("goodPages:", goodPages);
+                    console.log("badPages:", badPages);
+                }
                 return goodPages;
             }
             /*********************************************
@@ -275,19 +357,14 @@ var d2lScrape = (function () {
                             return link.getAttribute('href');
                         })
                         //filter down to just .html links
-                        .filter(function (link) {
-                            //so link.includes below doesn't break
-                            if (link === null) {
-                                return false;
-                            }
-
-                            return link.includes('.html');
-                        })
+                        .filter(keepHtmlLinks)
                         //make them absolute href's
                         .map(function (link) {
-                            link = link.trim();
 
-                            var linkOut = URI(link)
+
+                            var linkOut = link.trim();
+
+                            linkOut = URI(link)
                                 //turns href from a tag to absolute url based on page url like a browser does
                                 .absoluteTo(page.url)
                                 //encodes the url
@@ -295,9 +372,10 @@ var d2lScrape = (function () {
                                 //makes it a string
                                 .toString();
 
-                            //console.log("page.url", page.url, "\nlink:", link, "\nlinkOut:", linkOut);
                             return linkOut;
                         })
+                        //make sure the urls are ones in the course
+                        .filter(keepCourseLinks)
                     //stick those on the end of the current list
                     return urlsOut.concat(links);
                 }
@@ -365,7 +443,9 @@ var d2lScrape = (function () {
 
             //7,8 Get more urls from the current pages
             newUrls = getNewUrlsFromPages(currentPages, donePages);
-            console.log("newUrls:", newUrls);
+            if (showCrawlingSteps) {
+                console.log("newUrls:", newUrls);
+            }
 
 
             //9 loop if we have more urls else we are done!
@@ -394,20 +474,13 @@ var d2lScrape = (function () {
                 return;
             }
 
-            //filter out any null links and keep the ones we want
-            urls = topics.filter(function (topic) {
-                    //check that it exists    
-                    if (topic.Url === null) {
-                        return false;
-                    }
-
-                    //check that the Url has the content/enforced
-                    return topic.url.includes('/content/enforced/')
-                })
+            urls = topics
                 //map to just urls
                 .map(function (topic) {
                     return topic.url;
                 })
+                //filter out any null links and keep the ones we want
+                .filter(keepCourseLinks)
                 //make unique list
                 .filter(removeDuplicates)
 
