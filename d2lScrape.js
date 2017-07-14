@@ -32,6 +32,20 @@ var d2lScrape = (function () {
         }
     }
 
+    function getCourseInfo(orgUnitId, getcourseInfoCallback) {
+        var pathxhr = new XMLHttpRequest();
+        pathxhr.open("GET", "/d2l/api/lp/1.15/courses/" + orgUnitId)
+        pathxhr.onload = function () {
+            if (pathxhr.status == 200) {
+                var info = JSON.parse(pathxhr.response);
+                getcourseInfoCallback(null, info);
+            } else {
+                getcourseInfoCallback(makeRequestErrorObj(pathxhr), null)
+            }
+
+        }
+        pathxhr.send();
+    }
 
     /*********************************************
      *********************************************
@@ -59,20 +73,6 @@ var d2lScrape = (function () {
             tocxhr.send();
         }
 
-        function getCoursePath(orgUnitId, getPathCallback) {
-            var pathxhr = new XMLHttpRequest();
-            pathxhr.open("GET", "/d2l/api/lp/1.15/courses/" + orgUnitId)
-            pathxhr.onload = function () {
-                if (pathxhr.status == 200) {
-                    var path = JSON.parse(pathxhr.response).Path;
-                    getPathCallback(null, path);
-                } else {
-                    getPathCallback(makeRequestErrorObj(pathxhr), null)
-                }
-
-            }
-            pathxhr.send();
-        }
 
         /*********************************************
          * 2 Takes the toc and flatens it to an array of topics
@@ -172,11 +172,12 @@ var d2lScrape = (function () {
                 return;
             }
 
-            getCoursePath(orgUnitId, function (err, coursePath) {
+            getCourseInfo(orgUnitId, function (err, courseInfo) {
                 if (err) {
                     getTopicsFromTocCallback(err, null);
                     return;
                 }
+                var coursePath = courseInfo.Path;
 
                 //2 convert toc to array of urls
                 topics = TOC2Topics(toc, coursePath);
@@ -194,11 +195,11 @@ var d2lScrape = (function () {
 
         //used to filter down to urls we want to keep
         function keepHtmlLinks(url) {
-            //so link.includes below doesn't break
+            //so url.match below doesn't break
             if (url === null || typeof url === 'undefined') {
                 return false;
             }
-            var keep = url.includes('.html')
+            var keep = url.match('.html') !== null
 
             if (showDroppedUrls && !keep) {
                 console.log('not html url:', url);
@@ -211,7 +212,7 @@ var d2lScrape = (function () {
             if (url === null) {
                 return false;
             }
-            var keep = url.includes('/content/enforced/')
+            var keep = url.match('/content/enforced/') !== null;
 
             if (showDroppedUrls && !keep) {
                 console.log('not in cousre url:', url);
@@ -351,9 +352,8 @@ var d2lScrape = (function () {
                     //get all the a tags on the page
                     var links = page.document.querySelectorAll('a');
                     //convert nodelist to real array
-                    links = Array.from(links)
-                        //convert from `a` nodes to just href text
-                        .map(function (link) {
+                    //convert from `a` nodes to just href text
+                    links = Array.prototype.map.call(links, function (link) {
                             return link.getAttribute('href');
                         })
                         //filter down to just .html links
