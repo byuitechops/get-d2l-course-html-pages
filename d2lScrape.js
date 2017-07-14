@@ -38,7 +38,7 @@ var d2lScrape = (function () {
      * 1,2 Get topics from the course's Table of Contents
      * This function is called by getCourseHtmlPages but is also exposed through the api 
      **********************************************
-     *****************************************  *****/
+     **********************************************/
     function getTopicsWithUrlFromToc(orgUnitId, getTopicsFromTocCallback) {
         var toc, topics;
 
