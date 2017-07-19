@@ -177,12 +177,19 @@ var d2lScrape = (function () {
                     getTopicsFromTocCallback(err, null);
                     return;
                 }
-                var coursePath = courseInfo.Path;
+                var coursePath = courseInfo.Path,
+                    objOut;
 
                 //2 convert toc to array of urls
                 topics = TOC2Topics(toc, coursePath);
 
-                getTopicsFromTocCallback(null, topics);
+                //send back the course info too
+                objOut = {
+                    courseInfo: courseInfo,
+                    topics: topics
+                }
+
+                getTopicsFromTocCallback(null, objOut);
             })
         });
     }
@@ -225,7 +232,7 @@ var d2lScrape = (function () {
          * 3,4,5 Turn an array of urls into HTML pages
          **********************************************
          **********************************************/
-        function urlsToPages(urls, urlsToPagesInturnalCallback) {
+        function urlsToPages(urls, courseInfo, urlsToPagesInturnalCallback) {
             /*********************************************
              * 3 makes ajax call for each url to get the html text. 
              * Returns an array of objects with the following properties
@@ -315,7 +322,7 @@ var d2lScrape = (function () {
             //3 get the html pages
             getHtmlStrings(urls, function (err, currentPages) {
                 if (err) {
-                    urlsToPagesInturnalCallback(err, null);
+                    urlsToPagesInturnalCallback(err, null, null);
                     return;
                 }
 
@@ -325,7 +332,7 @@ var d2lScrape = (function () {
                 //5 Convert the htlm text to html documents
                 currentPages = parseHTML(currentPages);
 
-                urlsToPagesInturnalCallback(null, currentPages);
+                urlsToPagesInturnalCallback(null, currentPages, courseInfo);
             })
 
         }
@@ -432,7 +439,7 @@ var d2lScrape = (function () {
          * Then checks if we are done yet to either start another urlsToPages
          * Or calls the topCallback with the donePages
          **********************************************/
-        function loopEndProgress(err, currentPages) {
+        function loopEndProgress(err, currentPages, courseInfo) {
             if (err) {
                 topCallback(err, null);
                 return;
@@ -450,10 +457,11 @@ var d2lScrape = (function () {
 
             //9 loop if we have more urls else we are done!
             if (newUrls.length > 0) {
-                urlsToPages(newUrls, loopEndProgress);
+                urlsToPages(newUrls, courseInfo, loopEndProgress);
             } else {
                 //We are done!
                 topCallback(null, {
+                    courseInfo: courseInfo,
                     successfulPages: donePages,
                     errorPages: pagesWithError
                 });
@@ -467,14 +475,14 @@ var d2lScrape = (function () {
         /***************************************************/
         /***************************************************/
         //1,2
-        getTopicsWithUrlFromToc(orgUnitId, function (err, topics) {
+        getTopicsWithUrlFromToc(orgUnitId, function (err, topicsInfo) {
             var urls;
             if (err) {
                 topCallback(err, null);
                 return;
             }
 
-            urls = topics
+            urls = topicsInfo.topics
                 //map to just urls
                 .map(function (topic) {
                     return topic.url;
@@ -485,7 +493,7 @@ var d2lScrape = (function () {
                 .filter(removeDuplicates)
 
             // 3,4,5 convert the urls to pages then call the end of loop function
-            urlsToPages(urls, loopEndProgress)
+            urlsToPages(urls, topicsInfo.courseInfo, loopEndProgress)
 
         });
     }
