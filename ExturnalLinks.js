@@ -49,6 +49,7 @@ function ouToAllLinks(ouNumber, cb) {
                 .reduce(function (flat, pageLinkList) {
                     return flat.concat(pageLinkList);
                 }, [])
+                //this is for the csv lib 
                 .map(function (link) {
                     return {
                         urls: link

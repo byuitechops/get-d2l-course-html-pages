@@ -1,15 +1,17 @@
-d2lScrape.getCourseHtmlPages(10011, function (err, pages) {
+d2lScrape.getCourseHtmlPages(10011, function (err, data) {
     if (err) {
         console.log("err:", err);
     }
-    console.log("DEMO: pages.successfulPages:", pages.successfulPages);
-    console.log("DEMO: pages.errorPages:", pages.errorPages);
+    console.log("DEMO: data.courseInfo:", data.courseInfo);
+    console.log("DEMO: data.successfulPages:", data.successfulPages);
+    console.log("DEMO: data.errorPages:", data.errorPages);
 })
 
-d2lScrape.getTopicsWithUrlFromToc(10011, function (err, topics) {
+d2lScrape.getTopicsWithUrlFromToc(10011, function (err, data) {
     if (err) {
         console.log("err:", err);
     }
 
-    console.log("DEMO: topics:", topics);
+    console.log("DEMO: data.courseInfo:", data.courseInfo);
+    console.log("DEMO: data.topics:", data.topics);
 })
