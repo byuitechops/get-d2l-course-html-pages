@@ -489,6 +489,8 @@ var d2lScrape = (function () {
                 })
                 //filter out any null links and keep the ones we want
                 .filter(keepCourseLinks)
+                //keep only html links
+                .filter(keepHtmlLinks)
                 //make unique list
                 .filter(removeDuplicates)
 
