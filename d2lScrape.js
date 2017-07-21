@@ -77,10 +77,10 @@ var d2lScrape = (function () {
         /*********************************************
          * 2 Takes the toc and flatens it to an array of topics
          **********************************************/
-        function TOC2Topics(toc, coursePath) {
+        function TOC2Topics(toc, courseInfo) {
             var topicsOut;
 
-            function getURLFromTopic(topic, coursePath) {
+            function getURLFromTopic(topic, courseInfo) {
                 //some are set to null and I want to pass that info on to user
                 if (topic.Url === null) {
                     return null;
@@ -89,29 +89,46 @@ var d2lScrape = (function () {
                 //make the url absolute
                 var path,
                     origin = new URI(window.location.href).origin(),
+                    url;
+
+                //the URI lib throws errors if the url is not a url.
+                //example href="width:100%", 'width:100%' is not a url but is in a place that should be a url
+                //so catch the error and don't do anything to it but print it for fun. it will get filtered out later
+                try {
                     url = new URI(topic.Url);
 
-                //if the url is relative make it absolute
-                if (url.is('relative')) {
-                    /* We have html files with '#' in their name, # is normally reserved for hashs in urls
-                     * thus in the content area there are '#' in the middle of urls that need to be encoded
-                     * but libraries don't encode # by default, so we do it before we stick it in
-                     */
+                    //if the url is relative make it absolute
+                    if (url.is('relative')) {
+                        /* We have html files with '#' in their name, # is normally reserved for hashs in urls
+                         * thus in the content area there are '#' in the middle of urls that need to be encoded
+                         * but libraries don't encode # by default, so we do it before we stick it in
+                         */
 
-                    //fix file names with `#` in them
-                    path = topic.Url.replace(/#/g, '%23');
+                        //fix file names with `#` in them
+                        //the # sign does not get encoded even though its in the middle of the file
+                        if (topic.Title.match(/#/g) !== null) {
+                            path = topic.Url.replace(/#/g, '%23');
+                        }
 
-                    //fix scorm paths - scorm paths don't have the 
-                    if (topic.TypeIdentifier.match(/scorm/i) !== null) {
-                        path = coursePath + path;
+                        //fix scorm paths - scorm paths don't have the course path on it
+                        if (topic.TypeIdentifier.match(/scorm/i) !== null) {
+                            path = courseInfo.Path + path;
+                        }
+
                     }
-
                     //the url is relative make it absolute now
                     url = new URI(path).absoluteTo(origin);
+
+                    //we need a string to send on
+                    url = url.normalize().toString();
+                } catch (error) {
+                    console.warn("Problem with url in toc:", url);
+                    console.warn("Course Name:", courseInfo.Name)
+                    console.error(error);
+                    return topic.Url;
                 }
 
-                //we need a string to send on
-                url = url.normalize().toString();
+
 
                 //for testing
                 if (false && topic.Url.match('#') !== null) {
@@ -127,7 +144,7 @@ var d2lScrape = (function () {
             }
 
 
-            function proccssTopics(topics, coursePath) {
+            function proccssTopics(topics, courseInfo) {
                 return topics
                     //make sure the topic has a url
                     .filter(function (topic) {
@@ -137,7 +154,7 @@ var d2lScrape = (function () {
                     .map(function (topic) {
                         return {
                             title: topic.Title,
-                            url: getURLFromTopic(topic, coursePath),
+                            url: getURLFromTopic(topic, courseInfo),
                             type: topic.TypeIdentifier
                         }
                     });
@@ -149,17 +166,18 @@ var d2lScrape = (function () {
                 //dig deeper
                 if (module.Modules.length > 0) {
                     //get the next level and add it to the urls
-                    topics = topics.concat(TOC2Topics(module, coursePath));
+                    topics = topics.concat(TOC2Topics(module, courseInfo));
                 }
 
                 //get the ones here using the supplied function
                 if (module.Topics.length > 0) {
-                    topics = topics.concat(proccssTopics(module.Topics, coursePath));
+                    topics = topics.concat(proccssTopics(module.Topics, courseInfo));
                 }
 
                 //send them on
                 return topics;
             }, []);
+
 
             return topicsOut;
         }
@@ -177,11 +195,10 @@ var d2lScrape = (function () {
                     getTopicsFromTocCallback(err, null);
                     return;
                 }
-                var coursePath = courseInfo.Path,
-                    objOut;
+                var objOut;
 
                 //2 convert toc to array of urls
-                topics = TOC2Topics(toc, coursePath);
+                topics = TOC2Topics(toc, courseInfo);
 
                 //send back the course info too
                 objOut = {
@@ -349,12 +366,12 @@ var d2lScrape = (function () {
          * 7,8 Comb the html pages for any more urls we have not seen yet
          **********************************************
          **********************************************/
-        function getNewUrlsFromPages(currentPages, donePages) {
+        function getNewUrlsFromPages(currentPages, donePages, courseInfo) {
             var newUrls;
             /*********************************************
              * 7 find unique list of more links in the current pages  
              **********************************************/
-            function findMoreURLs(currentPages) {
+            function findMoreURLs(currentPages, courseInfo) {
                 function toUrls(urlsOut, page) {
                     //get all the a tags on the page
                     var links = page.document.querySelectorAll('a');
@@ -368,16 +385,25 @@ var d2lScrape = (function () {
                         //make them absolute href's
                         .map(function (link) {
 
-
                             var linkOut = link.trim();
 
-                            linkOut = URI(link)
-                                //turns href from a tag to absolute url based on page url like a browser does
-                                .absoluteTo(page.url)
-                                //encodes the url
-                                .normalize()
-                                //makes it a string
-                                .toString();
+                            //the URI lib throws errors if the url is not a url.
+                            //example href="width:100%", 'width:100%' is not a url but is in a place that should be a url
+                            //so catch the error and don't do anything to it but print it for fun. it will get filtered out later
+                            try {
+                                //fix the url
+                                linkOut = URI(link)
+                                    //turns href from a tag to absolute url based on page url like a browser does
+                                    .absoluteTo(page.url)
+                                    //encodes the url
+                                    .normalize()
+                                    //makes it a string
+                                    .toString();
+                            } catch (error) {
+                                console.warn("Problem with url in htmlpages:", linkOut);
+                                console.warn("Course Name:", courseInfo.Name)
+                                console.error(error);
+                            }
 
                             return linkOut;
                         })
@@ -423,7 +449,7 @@ var d2lScrape = (function () {
 
             /******************** getNewUrlsFromPages START *****************************/
             //7 Find more urls in current pages
-            newUrls = findMoreURLs(currentPages);
+            newUrls = findMoreURLs(currentPages, courseInfo);
 
             //8 Only keep newUrls if they are not already in the donePages 
             newUrls = filterOutDonePages(newUrls);
@@ -449,7 +475,7 @@ var d2lScrape = (function () {
             saveDonePages(currentPages);
 
             //7,8 Get more urls from the current pages
-            newUrls = getNewUrlsFromPages(currentPages, donePages);
+            newUrls = getNewUrlsFromPages(currentPages, donePages, courseInfo);
             if (showCrawlingSteps) {
                 console.log("newUrls:", newUrls);
             }
