@@ -115,13 +115,19 @@ var d2lScrape = (function () {
                             path = courseInfo.Path + path;
                         }
 
+                        //if we did either of the things above then make it a URI obj;
+                        if (typeof path !== 'undfined') {
+                            url = new URI(path);
+                        }
+
+                        //the url is relative make it absolute now
+                        url.absoluteTo(origin);
                     }
-                    //the url is relative make it absolute now
-                    url = new URI(path).absoluteTo(origin);
 
                     //we need a string to send on
                     url = url.normalize().toString();
                 } catch (error) {
+                    //if the url is not realy a url catch the error and send on the url
                     console.warn("Problem with url in toc:", url);
                     console.warn("Course Name:", courseInfo.Name)
                     console.error(error);
@@ -393,16 +399,19 @@ var d2lScrape = (function () {
                             try {
                                 //fix the url
                                 linkOut = URI(link)
-                                    //turns href from a tag to absolute url based on page url like a browser does
+                                    //turns href from a tag to absolute url based on page url like a browser does- if it is already is an absolute url it leaves it
                                     .absoluteTo(page.url)
                                     //encodes the url
                                     .normalize()
                                     //makes it a string
                                     .toString();
                             } catch (error) {
+                                //if the url is not really a url catch the error and send on null
                                 console.warn("Problem with url in htmlpages:", linkOut);
                                 console.warn("Course Name:", courseInfo.Name)
                                 console.error(error);
+                                //not a url it will get filter out in the filter below
+                                return null;
                             }
 
                             return linkOut;
