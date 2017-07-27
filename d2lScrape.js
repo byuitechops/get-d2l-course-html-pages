@@ -116,7 +116,7 @@ var d2lScrape = (function () {
                         }
 
                         //if we did either of the things above then make it a URI obj;
-                        if (typeof path !== 'undfined') {
+                        if (typeof path !== 'undefined') {
                             url = new URI(path);
                         }
 
