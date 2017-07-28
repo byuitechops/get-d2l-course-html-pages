@@ -538,7 +538,8 @@ var d2lScrape = (function () {
     //send back the exposed functions
     return {
         getTopicsWithUrlFromToc: getTopicsWithUrlFromToc,
-        getCourseHtmlPages: getCourseHtmlPages
+        getCourseHtmlPages: getCourseHtmlPages,
+        getCourseInfo: getCourseInfo
     }
 
 }());
