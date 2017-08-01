@@ -161,6 +161,7 @@ var d2lScrape = (function () {
                         return {
                             title: topic.Title,
                             url: getURLFromTopic(topic, courseInfo),
+                            topicId: topic.TopicId,
                             type: topic.TypeIdentifier
                         }
                     });
