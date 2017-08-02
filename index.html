@@ -1,34 +1,33 @@
-<link type="text/css" rel="stylesheet" href="styles.css">
 <form onsubmit="return false;" class="flex">
-  <div>
-    <div class="flex">
-      <label for="orgUnitId">Course OUs</label>
-      <input id="orgUnitId" type="text" required placeholder="10011, 10012">
+    <div>
+        <div class="flex">
+            <label for="orgUnitId">Course OUs</label>
+            <input id="orgUnitId" type="text" required placeholder="10011, 10012">
+        </div>
+        <div class="flex">
+            <label for="query">Query</label>
+            <input id="query" type="text" value="" placeholder="what you want to search for">
+        </div>
+        <div class="flex">
+            <input type="checkbox" id="cs">
+            <label for="cs">Case Sensitive</label>
+        </div>
+        <input type="submit" onclick="getUrls()" value="Get URLs">
     </div>
-    <div class="flex">
-      <label for="query">Query</label>
-      <input id="query" type="text" value="" placeholder="what you want to search for">
+    <div>
+        <div class="radio">
+            <input id="searchText" type="radio" name="type" checked="checked">
+            <label for="searchText" class="radio-label">Search Text</label>
+        </div>
+        <div class="radio">
+            <input id="linkHrefs" type="radio" name="type">
+            <label for="linkHrefs" class="radio-label">Link hrefs</label>
+        </div>
+        <div class="radio">
+            <input id="querySelector" type="radio" name="type">
+            <label for="querySelector" class="radio-label">Query Selector</label>
+        </div>
     </div>
-    <div class="flex">
-      <input type="checkbox" id="cs">
-      <label for="cs">Case Sensitive</label>
-    </div>
-    <input type="submit" onclick="getUrls()" value="Get URLs">
-  </div>
-  <div>
-    <div class="radio">
-      <input id="searchText" type="radio" name="type" checked="checked">
-      <label for="searchText" class="radio-label">Search Text</label>
-    </div>
-    <div class="radio">
-      <input id="linkHrefs" type="radio" name="type">
-      <label for="linkHrefs" class="radio-label">Link hrefs</label>
-    </div>
-    <div class="radio">
-      <input id="querySelector" type="radio" name="type">
-      <label for="querySelector" class="radio-label">Query Selector</label>
-    </div>
-  </div>
 </form>
 <div id="out">
 
