@@ -1,14 +1,35 @@
 var counter = 0;
 
-function downloadResults(results) {
-    // Only format the urls from the results
-    
+var downloadButton = document.querySelector('.downloadButton');
 
-    var formattedCSV = d3.csvFormat(results);
-    console.log(formattedCSV);
-}
 
 function showResults(course) {
+    /**
+     * This function downloads the results of the output on the screen.
+     * @return {void}
+     */
+    function downloadResults(course) {
+        console.log(course);
+        // Only format the urls from the results
+        //var urls = course.map(function(courseDataItem) {
+        //var ouNumber = courseDataItem.ou;
+        // courseDataItem.map(function(course) {
+        //
+        // })
+        // REFERENCE CODE: To rip out just the ouNumber from a content/enforced url
+        // var regExForOu = /\d+-/g;
+        //
+        // return {
+        //     courseDataItem.ou: courseDataItem.results.url
+        // };
+        //});
+
+        // console.log(urls);
+        //
+        // var formattedCSV = d3.csvFormat(urls);
+        // console.log(formattedCSV);
+    }
+
     ++counter
     var out = document.getElementById('out')
     /* Add ou as a heading, and then create list element to populate */
@@ -17,18 +38,8 @@ function showResults(course) {
     // About to test what is in results so we can gauge where to go for a download
     console.log(course.results);
 
-    // Create Download Button
-    var newDownloadButton = document.createElement('input');
-    newDownloadButton.setAttribute('type', 'submit');
-    newDownloadButton.setAttribute('value', 'Download CSV');
-    newDownloadButton.addEventListener('click', function () {
-        downloadResults(course.results);
-    });
-
-    // Show Download Button
-    var wholeWebAppDiv = document.querySelector('.wholeWebApp');
-    console.log(wholeWebAppDiv)
-    wholeWebAppDiv.appendChild(newDownloadButton);
+    // Enable Download Button
+    downloadButton.disabled = false;
 
     course.results.forEach(function (result) {
         /* Populate the list element*/
