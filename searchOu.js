@@ -1,7 +1,8 @@
 var counter = 0;
 
 function downloadResults(results) {
-
+    var formattedCSV = d3.csvFormat(results);
+    console.log(formattedCSV);
 }
 
 function showResults(course) {
@@ -13,7 +14,11 @@ function showResults(course) {
     // About to test what is in results so we can gauge where to go for a download
     console.log(course.results);
 
-    downloadResults(course.results)
+    // Show Download Button
+    var newDownloadButton = document.createElement('input');
+    newDownloadButton.addEventListener('click', function () {
+        downloadResults(course.results);
+    });
 
     course.results.forEach(function (result) {
         /* Populate the list element*/
