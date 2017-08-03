@@ -1,6 +1,9 @@
 var counter = 0;
 
 function downloadResults(results) {
+    // Only format the urls from the results
+    
+
     var formattedCSV = d3.csvFormat(results);
     console.log(formattedCSV);
 }
@@ -14,11 +17,18 @@ function showResults(course) {
     // About to test what is in results so we can gauge where to go for a download
     console.log(course.results);
 
-    // Show Download Button
+    // Create Download Button
     var newDownloadButton = document.createElement('input');
+    newDownloadButton.setAttribute('type', 'submit');
+    newDownloadButton.setAttribute('value', 'Download CSV');
     newDownloadButton.addEventListener('click', function () {
         downloadResults(course.results);
     });
+
+    // Show Download Button
+    var wholeWebAppDiv = document.querySelector('.wholeWebApp');
+    console.log(wholeWebAppDiv)
+    wholeWebAppDiv.appendChild(newDownloadButton);
 
     course.results.forEach(function (result) {
         /* Populate the list element*/
