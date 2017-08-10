@@ -5,6 +5,8 @@ function ouToAllLinks(ouNumber, cb) {
             return;
         }
 
+        console.log("topics:", topics);
+
 
 
         d2lScrape.getCourseHtmlPages(ouNumber, function (err, pages) {
