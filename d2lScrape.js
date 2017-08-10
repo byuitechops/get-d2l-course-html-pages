@@ -112,7 +112,11 @@ var d2lScrape = (function () {
 
                         //fix scorm paths - scorm paths don't have the course path on it
                         if (topic.TypeIdentifier.match(/scorm/i) !== null) {
-                            path = courseInfo.Path + path;
+                            if (typeof path !== 'undefined') {
+                                path = courseInfo.Path + path;
+                            } else {
+                                path = courseInfo.Path + topic.Url;
+                            }
                         }
 
                         //if we did either of the things above then make it a URI obj;
