@@ -116,7 +116,7 @@ var d2lScrape = (function () {
                         }
 
                         //if we did either of the things above then make it a URI obj;
-                        if (typeof path !== 'undfined') {
+                        if (typeof path !== 'undefined') {
                             url = new URI(path);
                         }
 
@@ -161,6 +161,7 @@ var d2lScrape = (function () {
                         return {
                             title: topic.Title,
                             url: getURLFromTopic(topic, courseInfo),
+                            topicId: topic.TopicId,
                             type: topic.TypeIdentifier
                         }
                     });
@@ -538,7 +539,8 @@ var d2lScrape = (function () {
     //send back the exposed functions
     return {
         getTopicsWithUrlFromToc: getTopicsWithUrlFromToc,
-        getCourseHtmlPages: getCourseHtmlPages
+        getCourseHtmlPages: getCourseHtmlPages,
+        getCourseInfo: getCourseInfo
     }
 
 }());
