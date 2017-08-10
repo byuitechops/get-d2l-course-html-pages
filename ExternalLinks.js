@@ -5,10 +5,6 @@ function ouToAllLinks(ouNumber, cb) {
             return;
         }
 
-        console.log("topics:", topics);
-
-
-
         d2lScrape.getCourseHtmlPages(ouNumber, function (err, pages) {
             var pageLinks, objOut;
             if (err) {
@@ -67,7 +63,15 @@ function ouToAllLinks(ouNumber, cb) {
                     return typeof topic !== 'undefined';
                 }),
                 pageLinks: pageLinks,
-                errorPages: pages.errorPages
+                errorPages: pages.errorPages.map(function (error) {
+                    return {
+                        html: error.html,
+                        url: error.url,
+                        responseURL: error.error.responseURL,
+                        status: error.error.status,
+                        statusText: error.error.statusText
+                    };
+                })
             };
 
             cb(null, objOut);
@@ -81,7 +85,7 @@ function search() {
     var ouNumbers = document.querySelector('#ous').value.trim().split('\n');
     //var ouNumbers = ['106952', '16197', '23800', '16214', '105848'];
     //var ouNumbers = ['106952'];
-    console.log(ouNumbers);
+    console.log("ouNumbers:", ouNumbers);
 
     async.map(ouNumbers, ouToAllLinks, function (err, classes) {
         if (err) {
@@ -90,7 +94,6 @@ function search() {
         }
         //make csvs
         var csvsByClass = classes.map(function (links) {
-            console.log(links.topicLinks);
             return {
                 className: links.courseInfo.Name.replace(/ /g, ''),
                 errorPages: d3.csvFormat(links.errorPages),
