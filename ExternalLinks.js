@@ -1,4 +1,28 @@
 function ouToAllLinks(ouNumber, cb) {
+    function isValidHref(href) {
+
+        //do we even have one?
+        if (href === null || typeof href === 'undefined') {
+            return false;
+        }
+
+        //is it a url
+        try {
+            //try to parse it
+            var parsedLink = URI(href);
+            //if we made it this far then it parsed 
+            //now check if we have a url
+            return parsedLink.is('url');
+
+        } catch (e) {
+            //it must not have parsed
+            //so don't keep it
+            return false;
+        }
+
+    }
+
+
     d2lScrape.getTopicsWithUrlFromToc(ouNumber, function (err, topics) {
         if (err) {
             cb(err, null);
@@ -14,26 +38,27 @@ function ouToAllLinks(ouNumber, cb) {
 
             pageLinks = pages.successfulPages.map(function (page) {
                     return Array.from(page.document.querySelectorAll('a'))
+                        //get the href attribute  
+                        //add pageUrl so the end user knows where we found this
                         .map(function (aTag) {
-                            return aTag.getAttribute('href');
+                            return {
+                                link: aTag.getAttribute('href'),
+                                pageUrl: page.url
+                            };
+
                         })
-                        .map(function (link) {
+                        //get rid of all not valid links
+                        .filter(function (linkIn) {
+                            return isValidHref(linkIn.link);
 
-                            if (link === null) {
-                                return null;
-                            }
+                        })
+                        //normalize the urls
+                        .map(function (linkIn) {
+                            var linkOut = URI(linkIn.link);
 
-                            var linkOut = link.trim();
-                            linkOut = URI(link);
-
-                            //make sure we have a url
-                            if (!linkOut.is('url')) {
-                                return null;
-                            }
-
-                            if (linkOut.is('url') && linkOut.is('relative')) {
-                                //turns href from a tag to absolute url based on page url like a browser does
-                                linkOut = linkOut.absoluteTo(page.url)
+                            if (linkOut.is('relative')) {
+                                //turns href from the 'a' tag to absolute url based on page url like a browser does
+                                linkOut = linkOut.absoluteTo(linkIn.pageUrl)
                             }
 
                             //fix it the rest of the way
@@ -43,19 +68,16 @@ function ouToAllLinks(ouNumber, cb) {
                                 //makes it a string
                                 .toString();
 
-                            return linkOut;
+                            //update the url
+                            linkIn.link = linkOut
+
+                            return linkIn;
                         })
                 })
                 //flaten 
                 .reduce(function (flat, pageLinkList) {
                     return flat.concat(pageLinkList);
                 }, [])
-                //this is for the csv lib 
-                .map(function (link) {
-                    return {
-                        urls: link
-                    };
-                })
 
             objOut = {
                 courseInfo: pages.courseInfo,
