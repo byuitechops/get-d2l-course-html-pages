@@ -125,7 +125,7 @@ var d2lScrape = (function () {
                         }
 
                         //the url is relative make it absolute now
-                        url.absoluteTo(origin);
+                        url = url.absoluteTo(origin);
                     }
 
                     //we need a string to send on
