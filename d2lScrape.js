@@ -271,21 +271,23 @@ var d2lScrape = (function () {
                     var xhr = new XMLHttpRequest();
 
                     xhr.open("GET", url);
-                    xhr.onload = function (e) {
-                        if (xhr.status == 200) {
-                            //console.log('happy');
-                            callback(null, {
-                                url: url,
-                                html: xhr.response,
-                                error: null
-                            });
-                        } else {
-                            callback(null, {
-                                url: url,
-                                html: null,
-                                error: makeRequestErrorObj(xhr)
-                            });
-                        }
+                    xhr.onreadystatechange = function (e) {
+                        if(xhr.readyState === XMLHttpRequest.DONE){
+                            if (xhr.status == 200) {
+                                //console.log('happy');
+                                callback(null, {
+                                    url: url,
+                                    html: xhr.response,
+                                    error: null
+                                });
+                            } else {
+                                callback(null, {
+                                    url: url,
+                                    html: null,
+                                    error: makeRequestErrorObj(xhr)
+                                });
+                            }
+                      }
                     }
                     xhr.send();
                 }
